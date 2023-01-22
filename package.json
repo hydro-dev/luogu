@@ -1,0 +1,10 @@
+{
+    "name": "@hydrooj/vjudge-luogu",
+    "version": "0.0.1",
+    "hydrooj": {
+        "master": {
+            "using": "vjudge",
+            "entry": "index.ts"
+        }
+    }
+}
