@@ -1,10 +1,10 @@
 /* eslint-disable consistent-return */
 /* eslint-disable no-await-in-loop */
 import { exec } from 'child_process';
+import { create } from 'fancy-progress';
 import {
     DomainModel, fs, ProblemModel, sleep, SystemModel, UserModel, yaml,
 } from 'hydrooj';
-import Progress from './progress.cjs';
 
 const langs = (domainId) => `
 luogu:
@@ -153,7 +153,7 @@ export async function importProblem(path: string, domainId = 'luogu', owner = 1)
     if (!udoc) return console.log('User not found');
     const file = fs.readFileSync(path, 'utf-8').replace(/\r/g, '').split('\n').filter((x) => x.trim());
     const n = file.length;
-    const bar = new Progress({ name: 'Progress' });
+    const bar = create('Progress', 'green');
     const current = SystemModel.get('hydrooj.langs');
     if (!current.includes('luogu')) {
         await SystemModel.set('hydrooj.langs', `${current}\n${langs(domainId)}`);
@@ -168,7 +168,7 @@ export async function importProblem(path: string, domainId = 'luogu', owner = 1)
                 process.exit(1);
             }
             const interval = setInterval(() => {
-                bar.updateProgress(i / n, '', message.map((l) => `\n${l.replace(/\n/g, '')}`));
+                bar.update(i / n, message.map((l) => `${l.replace(/\n/g, ' ')}`).join('\n'));
             }, 1000);
             await sleep(100);
             process.stdin.setRawMode(true);
@@ -192,7 +192,7 @@ export async function importProblem(path: string, domainId = 'luogu', owner = 1)
             translation,
         } = JSON.parse(file[i - 1]);
         const title = _title.replace(/](?! )/g, '] ');
-        bar.updateProgress(i / n, '', [`(${i}/${n}) ${title}`]);
+        bar.update(i / n, `(${i}/${n}) ${title}`);
         let content = '';
         if (background?.trim()) content += `## 题目背景\n${background}\n\n`;
         if (description?.trim()) content += `## 题目描述\n${description}\n\n`;

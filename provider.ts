@@ -1,9 +1,8 @@
 /* eslint-disable no-await-in-loop */
-import { JSDOM } from 'jsdom';
 import { BasicFetcher } from '@hydrooj/vjudge/src/fetch';
 import { IBasicProvider, RemoteAccount } from '@hydrooj/vjudge/src/interface';
 import {
-    _, Logger, SettingModel, sleep, STATUS, superagent,
+    _, Logger, sleep, STATUS,
 } from 'hydrooj';
 
 const logger = new Logger('remote/luogu');
@@ -33,7 +32,7 @@ const UA = [
 
 export default class LuoguProvider extends BasicFetcher implements IBasicProvider {
     constructor(public account: RemoteAccount, private save: (data: any) => Promise<void>) {
-        super(account, 'https://www.luogu.com.cn', 'form', logger, {
+        super(account, 'https://www.luogu.com.cn', 'json', logger, {
             headers: { 'User-Agent': UA },
             post: {
                 headers: {
@@ -42,28 +41,16 @@ export default class LuoguProvider extends BasicFetcher implements IBasicProvide
                 },
             },
         });
-        setInterval(() => this.getCsrfToken('/user/setting'), 5 * 60 * 1000);
-    }
-
-    csrf: string;
-
-    post(url: string) {
-        logger.debug('post', url, this.cookie);
-        if (!url.includes('//')) url = `${this.account.endpoint || 'https://www.luogu.com.cn'}${url}`;
-        const req = superagent.post(url)
-            .set('Cookie', this.cookie)
-            .set('x-csrf-token', this.csrf)
-            .set('User-Agent', UA)
-            .set('x-requested-with', 'XMLHttpRequest')
-            .set('origin', 'https://www.luogu.com.cn');
-        return req;
+        setInterval(() => {
+            this.ensureLogin();
+            this.getCsrfToken('/user/setting');
+        }, 5 * 60 * 1000);
     }
 
     async getCsrfToken(url: string) {
-        const { text: html } = await this.get(url);
-        const $dom = new JSDOM(html);
-        this.csrf = $dom.window.document.querySelector('meta[name="csrf-token"]')!.getAttribute('content')!;
-        logger.info('csrf-token=', this.csrf);
+        const csrf = (await this.html(url)).document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+        logger.info('csrf-token=', csrf);
+        // this.fetchOptions.post.headers['x-csrf-token'] = csrf;
     }
 
     get loggedIn() {
@@ -76,18 +63,22 @@ export default class LuoguProvider extends BasicFetcher implements IBasicProvide
             return true;
         }
         logger.info('retry login');
-        // TODO login;
+        const res = await this.post(`/api/auth/userPassLogin${this.account.query || ''}`)
+            .set('referer', 'https://www.luogu.com.cn/user/setting')
+            .send({
+                username: this.account.handle,
+                password: this.account.password,
+            });
+        if (res.headers['set-cookie']) this.setCookie(res.headers['set-cookie']);
+        if (await this.loggedIn) {
+            await this.getCsrfToken('/user/setting');
+            return true;
+        }
         return false;
     }
 
-    async getProblem(id: string) {
-        return {
-            title: id,
-            data: {},
-            files: {},
-            tag: [],
-            content: '',
-        };
+    async getProblem() {
+        return null;
     }
 
     async listProblem() {
@@ -96,33 +87,43 @@ export default class LuoguProvider extends BasicFetcher implements IBasicProvide
 
     async submitProblem(id: string, lang: string, code: string, info, next, end) {
         let enableO2 = 0;
-        const comment = SettingModel.langs[lang]?.comment;
         if (code.length < 10) {
             end({ status: STATUS.STATUS_COMPILE_ERROR, message: 'Code too short' });
             return null;
         }
         if (!lang.startsWith('luogu.')) {
             end({ status: STATUS.STATUS_COMPILE_ERROR, message: `Language not supported: ${lang}` });
-        }
-        if (comment) {
-            const msg = `Hydro submission #${info.rid}@${new Date().toLocaleString()}`;
-            if (typeof comment === 'string') code = `${comment} ${msg}\n${code}`;
-            else if (comment instanceof Array) code = `${comment[0]} ${msg} ${comment[1]}\n${code}`;
+            return null;
         }
         if (lang.endsWith('o2')) {
             enableO2 = 1;
             lang = lang.slice(0, -2);
         }
         lang = lang.split('luogu.')[1];
-        const result = await this.post(`/fe/api/problem/submit/${id}${this.account.query || ''}`)
-            .set('referer', `https://www.luogu.com.cn/problem/${id}`)
-            .send({
-                code,
-                lang: +lang,
-                enableO2,
-            });
-        logger.info('RecordID:', result.body.rid);
-        return result.body.rid;
+        try {
+            const result = await this.post(`/fe/api/problem/submit/${id}${this.account.query || ''}`)
+                .set('referer', `https://www.luogu.com.cn/problem/${id}`)
+                .send({
+                    code,
+                    lang: +lang,
+                    enableO2,
+                });
+            logger.info('RecordID:', result.body.rid);
+            return result.body.rid;
+        } catch (e) {
+            let parsed = e;
+            if (e.text) {
+                try {
+                    const message = JSON.parse(e.text).errorMessage;
+                    if (!message) throw e;
+                    parsed = new Error(message);
+                    parsed.stack = e.stack;
+                } catch (err) {
+                    throw e;
+                }
+            }
+            throw parsed;
+        }
     }
 
     async waitForSubmission(id: string, next, end) {
@@ -144,8 +145,10 @@ export default class LuoguProvider extends BasicFetcher implements IBasicProvide
                     });
                 }
                 logger.info('Fetched with length', JSON.stringify(body).length);
-                const total = _.flattenDeep(body.currentData.testCaseGroup).length;
                 if (!data.detail.judgeResult?.subtasks) continue;
+                const total = _.flattenDeep(body.currentData.testCaseGroup).length;
+                const cases = [];
+                let progress = (finished / total) * 100;
                 for (const key in data.detail.judgeResult.subtasks) {
                     const subtask = data.detail.judgeResult.subtasks[key];
                     for (const cid in subtask.testCases || {}) {
@@ -153,20 +156,18 @@ export default class LuoguProvider extends BasicFetcher implements IBasicProvide
                         finished++;
                         done[`${subtask.id}.${cid}`] = true;
                         const testcase = subtask.testCases[cid];
-                        await next({
-                            status: STATUS.STATUS_JUDGING,
-                            case: {
-                                id: +cid || 0,
-                                subtaskId: +subtask.id || 0,
-                                status: STATUS_MAP[testcase.status],
-                                time: testcase.time,
-                                memory: testcase.memory,
-                                message: testcase.description,
-                            },
-                            progress: (finished / total) * 100,
+                        cases.push({
+                            id: +cid || 0,
+                            subtaskId: +subtask.id || 0,
+                            status: STATUS_MAP[testcase.status],
+                            time: testcase.time,
+                            memory: testcase.memory,
+                            message: testcase.description,
                         });
+                        progress = (finished / total) * 100;
                     }
                 }
+                if (cases.length) await next({ status: STATUS.STATUS_JUDGING, cases, progress });
                 if (data.status < 2) continue;
                 logger.info('RecordID:', id, 'done');
                 // TODO calc total status
