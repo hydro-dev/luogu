@@ -1,9 +1,7 @@
 /* eslint-disable no-await-in-loop */
 import { BasicFetcher } from '@hydrooj/vjudge/src/fetch';
 import { IBasicProvider, RemoteAccount } from '@hydrooj/vjudge/src/interface';
-import {
-    _, Logger, sleep, STATUS,
-} from 'hydrooj';
+import { Logger, sleep, STATUS } from 'hydrooj';
 
 const logger = new Logger('remote/luogu');
 
@@ -30,51 +28,50 @@ const UA = [
     `Vjudge/${global.Hydro.version.vjudge}`,
 ].join(' ');
 
+// TODO ?
+const langMapping = {
+    1: 'pas',
+    2: 'c',
+    3: 'cpp',
+    4: 'c11',
+    6: 'py2',
+    7: 'py3',
+    8: 'java8',
+    9: 'node8',
+    10: 'shell',
+    11: 'c14',
+    12: 'c17',
+    13: 'ruby',
+    14: 'go',
+    15: 'rust',
+    16: 'php',
+    17: 'mono_cs',
+    18: 'mono_vb',
+    19: 'haskell',
+    21: 'kotlin_jvm',
+    22: 'scala',
+    23: 'perl',
+    24: 'pypy2',
+    25: 'pypy3',
+    27: 'c20',
+    28: 'c14_gcc9',
+    29: 'fsharp',
+    30: 'ocaml',
+    31: 'julia',
+};
+
 export default class LuoguProvider extends BasicFetcher implements IBasicProvider {
     constructor(public account: RemoteAccount, private save: (data: any) => Promise<void>) {
-        super(account, 'https://www.luogu.com.cn', 'json', logger, {
-            headers: { 'User-Agent': UA },
-            post: {
-                headers: {
-                    'x-requested-with': 'XMLHttpRequest',
-                    origin: 'https://www.luogu.com.cn',
-                },
+        super(account, 'https://open-v1.lgapi.cn', 'json', logger, {
+            headers: {
+                'User-Agent': UA,
+                Authorization: `Basic ${Buffer.from(`${account.handle}:${account.password}`).toString('base64')}`,
             },
         });
-        setInterval(() => {
-            this.ensureLogin();
-            this.getCsrfToken('/user/setting');
-        }, 5 * 60 * 1000);
-    }
-
-    async getCsrfToken(url: string) {
-        const csrf = (await this.html(url)).document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-        logger.info('csrf-token=', csrf);
-        // this.fetchOptions.post.headers['x-csrf-token'] = csrf;
-    }
-
-    get loggedIn() {
-        return this.get('/user/setting?_contentOnly=1').then(({ body }) => body.currentTemplate !== 'AuthLogin');
     }
 
     async ensureLogin() {
-        if (await this.loggedIn) {
-            await this.getCsrfToken('/user/setting');
-            return true;
-        }
-        logger.info('retry login');
-        const res = await this.post(`/api/auth/userPassLogin${this.account.query || ''}`)
-            .set('referer', 'https://www.luogu.com.cn/user/setting')
-            .send({
-                username: this.account.handle,
-                password: this.account.password,
-            });
-        if (res.headers['set-cookie']) this.setCookie(res.headers['set-cookie']);
-        if (await this.loggedIn) {
-            await this.getCsrfToken('/user/setting');
-            return true;
-        }
-        return false;
+        return true;
     }
 
     async getProblem() {
@@ -86,7 +83,7 @@ export default class LuoguProvider extends BasicFetcher implements IBasicProvide
     }
 
     async submitProblem(id: string, lang: string, code: string, info, next, end) {
-        let enableO2 = 0;
+        let o2 = false;
         if (code.length < 10) {
             end({ status: STATUS.STATUS_COMPILE_ERROR, message: 'Code too short' });
             return null;
@@ -96,21 +93,23 @@ export default class LuoguProvider extends BasicFetcher implements IBasicProvide
             return null;
         }
         if (lang.endsWith('o2')) {
-            enableO2 = 1;
+            o2 = true;
             lang = lang.slice(0, -2);
         }
-        lang = lang.split('luogu.')[1];
+        lang = langMapping[lang.split('luogu.')[1]];
         try {
-            const result = await this.post(`/fe/api/problem/submit/${id}${this.account.query || ''}`)
-                .set('referer', `https://www.luogu.com.cn/problem/${id}`)
+            const result = await this.post('/judge/problem')
                 .send({
+                    pid: id,
                     code,
-                    lang: +lang,
-                    enableO2,
+                    lang,
+                    o2,
+                    trackId: '1',
                 });
-            logger.info('RecordID:', result.body.rid);
-            return result.body.rid;
+            logger.info('RecordID:', result.body.id);
+            return result.body.id;
         } catch (e) {
+            // TODO error handling
             let parsed = e;
             if (e.text) {
                 try {
@@ -131,51 +130,54 @@ export default class LuoguProvider extends BasicFetcher implements IBasicProvide
         let fail = 0;
         let count = 0;
         let finished = 0;
+        let compiled = false;
         next({ progress: 5 });
         while (count < 120 && fail < 5) {
             await sleep(1500);
             count++;
             try {
-                const { body } = await this.get(`/record/${id}?_contentOnly=1`);
-                const data = body.currentData.record;
-                if (data.detail.compileResult && data.detail.compileResult.success === false) {
-                    await next({ compilerText: data.detail.compileResult.message });
-                    return await end({
-                        status: STATUS.STATUS_COMPILE_ERROR, score: 0, time: 0, memory: 0,
-                    });
+                const { body } = await this.get(`/judge/result?id=${id}`);
+                if (!compiled && body.data.compile) {
+                    compiled = true;
+                    next({ compilerText: body.data.compile.message });
+                    if (body.data.compile.success === false) {
+                        return await end({
+                            status: STATUS.STATUS_COMPILE_ERROR, score: 0, time: 0, memory: 0,
+                        });
+                    }
                 }
                 logger.info('Fetched with length', JSON.stringify(body).length);
-                if (!data.detail.judgeResult?.subtasks) continue;
-                const total = _.flattenDeep(body.currentData.testCaseGroup).length;
+                if (!body.data.judge) continue;
+                const judge = body.data.judge;
+                const total = judge.subtasks.flatMap((i) => i.cases).length;
                 const cases = [];
                 let progress = (finished / total) * 100;
-                for (const key in data.detail.judgeResult.subtasks) {
-                    const subtask = data.detail.judgeResult.subtasks[key];
-                    for (const cid in subtask.testCases || {}) {
-                        if (done[`${subtask.id}.${cid}`]) continue;
+                for (const subtask of judge.subtasks) {
+                    for (const c of subtask.cases) {
+                        if (done[`${subtask.id}.${c.id}`]) continue;
                         finished++;
-                        done[`${subtask.id}.${cid}`] = true;
-                        const testcase = subtask.testCases[cid];
+                        done[`${subtask.id}.${c.id}`] = true;
                         cases.push({
-                            id: +cid || 0,
+                            id: +c.id || 0,
                             subtaskId: +subtask.id || 0,
-                            status: STATUS_MAP[testcase.status],
-                            time: testcase.time,
-                            memory: testcase.memory,
-                            message: testcase.description,
+                            status: STATUS_MAP[c.status],
+                            time: c.time,
+                            memory: c.memory,
+                            message: c.description,
                         });
                         progress = (finished / total) * 100;
                     }
                 }
                 if (cases.length) await next({ status: STATUS.STATUS_JUDGING, cases, progress });
-                if (data.status < 2) continue;
+                if (judge.status < 2) continue;
                 logger.info('RecordID:', id, 'done');
                 // TODO calc total status
+                // TODO return subtask status
                 return await end({
-                    status: STATUS_MAP[data.status],
-                    score: data.score,
-                    time: data.time,
-                    memory: data.memory,
+                    status: STATUS_MAP[judge.status],
+                    score: judge.score,
+                    time: judge.time,
+                    memory: judge.memory,
                 });
             } catch (e) {
                 logger.error(e);

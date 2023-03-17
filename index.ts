@@ -1,4 +1,4 @@
-import './import.ts';
+import './import';
 
 import { } from '@hydrooj/vjudge';
 import { Context } from 'hydrooj';
