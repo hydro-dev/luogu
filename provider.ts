@@ -106,8 +106,8 @@ export default class LuoguProvider extends BasicFetcher implements IBasicProvide
                     o2,
                     trackId: '1',
                 });
-            logger.info('RecordID:', result.body.id);
-            return result.body.id;
+            logger.info('RecordID:', result.body.id || result.body.resultId);
+            return result.body.id || result.body.resultId;
         } catch (e) {
             // TODO error handling
             let parsed = e;
@@ -136,8 +136,11 @@ export default class LuoguProvider extends BasicFetcher implements IBasicProvide
             await sleep(1500);
             count++;
             try {
-                const { body } = await this.get(`/judge/result?id=${id}`);
-                if (!compiled && body.data.compile) {
+                const { body, noContent } = await this.get(`/judge/result?id=${id}`)
+                    .ok((res) => [200, 204].includes(res.status)).retry(5);
+                if (noContent || !body.data) continue;
+                logger.debug(body);
+                if (!compiled && body.data && body.data.compile) {
                     compiled = true;
                     next({ compilerText: body.data.compile.message });
                     if (body.data.compile.success === false) {
