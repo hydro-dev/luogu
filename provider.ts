@@ -98,7 +98,7 @@ export default class LuoguProvider extends BasicFetcher implements IBasicProvide
         }
         lang = langMapping[lang.split('luogu.')[1]];
         try {
-            const result = await this.post('/judge/problem')
+            const { body } = await this.post('/judge/problem')
                 .send({
                     pid: id,
                     code,
@@ -106,8 +106,9 @@ export default class LuoguProvider extends BasicFetcher implements IBasicProvide
                     o2,
                     trackId: '1',
                 });
-            logger.info('RecordID:', result.body.id || result.body.resultId);
-            return result.body.id || result.body.resultId;
+            logger.debug(body);
+            logger.info('RecordID:', body.id || body.resultId || body.requestId);
+            return body.id || body.resultId || body.requestId;
         } catch (e) {
             // TODO error handling
             let parsed = e;
