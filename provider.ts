@@ -1,7 +1,9 @@
 /* eslint-disable no-await-in-loop */
 import { BasicFetcher } from '@hydrooj/vjudge/src/fetch';
 import { IBasicProvider, RemoteAccount } from '@hydrooj/vjudge/src/interface';
-import { Logger, sleep, STATUS } from 'hydrooj';
+import {
+    Logger, sleep, STATUS, SystemModel,
+} from 'hydrooj';
 
 const logger = new Logger('remote/luogu');
 
@@ -23,38 +25,30 @@ const STATUS_MAP = [
     STATUS.STATUS_WRONG_ANSWER,
 ];
 
-const UA = [
-    `Hydro/${global.Hydro.version.hydrooj}`,
-    `Vjudge/${global.Hydro.version.vjudge}`,
-].join(' ');
-
 // TODO ?
 const langMapping = {
-    1: 'pas',
-    2: 'c',
-    3: 'cpp',
-    4: 'c11',
-    6: 'py2',
-    7: 'py3',
-    8: 'java8',
-    9: 'node8',
-    10: 'shell',
-    11: 'c14',
-    12: 'c17',
+    1: 'pascal/fpc',
+    2: 'c/99/gcc',
+    3: 'cxx/98/gcc',
+    4: 'cxx/11/gcc',
+    7: 'python3/c',
+    8: 'java/8',
+    9: 'js/node/lts',
+    11: 'cxx/14/gcc',
+    12: 'cxx/17/gcc',
     13: 'ruby',
     14: 'go',
-    15: 'rust',
+    15: 'rust/rustc',
     16: 'php',
     17: 'mono_cs',
     18: 'mono_vb',
-    19: 'haskell',
-    21: 'kotlin_jvm',
+    19: 'haskell/ghc',
+    21: 'kotlin/jvm',
     22: 'scala',
     23: 'perl',
-    24: 'pypy2',
-    25: 'pypy3',
-    27: 'c20',
-    28: 'c14_gcc9',
+    25: 'python3/py',
+    27: 'cxx/20/gcc',
+    28: 'cxx/noi/202107',
     29: 'fsharp',
     30: 'ocaml',
     31: 'julia',
@@ -62,6 +56,11 @@ const langMapping = {
 
 export default class LuoguProvider extends BasicFetcher implements IBasicProvider {
     constructor(public account: RemoteAccount, private save: (data: any) => Promise<void>) {
+        const UA = [
+            `Hydro/${global.Hydro.version.hydrooj}`,
+            `(Instance Id ${SystemModel.get('installid').substring(0, 16)})`,
+            `Vjudge/${global.Hydro.version.vjudge}`,
+        ].join(' ');
         super(account, 'https://open-v1.lgapi.cn', 'json', logger, {
             headers: {
                 'User-Agent': UA,
@@ -96,7 +95,7 @@ export default class LuoguProvider extends BasicFetcher implements IBasicProvide
             o2 = true;
             lang = lang.slice(0, -2);
         }
-        lang = langMapping[lang.split('luogu.')[1]];
+        lang = Number.isNaN(+lang.split('luogu.')[1]) ? lang.split('luogu.')[1] : langMapping[lang.split('luogu.')[1]];
         try {
             const { body } = await this.post('/judge/problem')
                 .send({

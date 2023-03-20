@@ -14,124 +14,127 @@ luogu:
   - "${domainId}"
   hidden: true
   remote: luogu
-luogu.1:
+luogu.pascal/fpc:
   highlight: pascal
   display: Pascal
   comment: //
   pretest: pas
-luogu.2:
+luogu.c/99/gcc:
   highlight: cpp astyle-c
   display: C
   comment: //
   monaco: cpp
   pretest: c
-luogu.2o2:
+luogu.c/99/gcco2:
   highlight: cpp astyle-c
   display: C(O2)
   comment: //
   monaco: cpp
   pretest: cc
-luogu.3:
+luogu.cxx/98/gcc:
   highlight: cpp astyle-c
   display: C++98
   comment: //
   monaco: cpp
   pretest: cc
-luogu.3o2:
+luogu.cxx/98/gcco2:
   highlight: cpp astyle-c
   display: C++98(O2)
   comment: //
   monaco: cpp
   pretest: cc
-luogu.4:
+luogu.cxx/11/gcc:
   highlight: cpp astyle-c
   display: C++11
   comment: //
   monaco: cpp
   pretest: cc
-luogu.4o2:
+luogu.cxx/11/gcco2:
   highlight: cpp astyle-c
   display: C++11(O2)
   comment: //
   monaco: cpp
   pretest: cc
-luogu.7:
+luogu.python3/c:
   highlight: python
   display: Python 3
   comments: '#'
   pretest: py.py3
-luogu.8:
+luogu.java/8:
   highlight: java astyle-java
   display: Java
   comments: //
-luogu.9:
+luogu.js/node/lts:
   highlight: js
   display: Node.js LTS
   comments: //
-luogu.11:
+luogu.cxx/14/gcc:
   highlight: cpp astyle-c
   display: C++14
   comment: //
   monaco: cpp
   pretest: cc
-luogu.11o2:
+luogu.cxx/14/gcco2:
   highlight: cpp astyle-c
   display: C++14(O2)
   comment: //
   monaco: cpp
   pretest: cc
-luogu.12:
+luogu.cxx/17/gcc:
   highlight: cpp astyle-c
   display: C++17
   comment: //
   monaco: cpp
   pretest: cc
-luogu.12o2:
+luogu.cxx/17/gcco2:
   highlight: cpp astyle-c
   display: C++17(O2)
   comment: //
   monaco: cpp
   pretest: cc
-luogu.13:
+luogu.ruby:
   highlight: ruby
   display: Ruby
   comment: //
-luogu.14:
+luogu.go:
   highlight: go
   display: Go
   comment: //
-luogu.15:
+luogu.rust/rustc:
   highlight: rust
   display: Rust
   comment: //
-luogu.16:
+luogu.php:
   highlight: php
   display: PHP
-luogu.17:
+luogu.csharp:
+  disabled: true
   highlight: csharp
   display: 'C#'
   comment: //
-luogu.18:
+luogu.vb:
+  disabled: true
   highlight: vb
   display: Visual Basic Mono
   comment: //
-luogu.19:
+luogu.haskell/ghc:
   highlight: hs
   display: Haskell
   comment: //
-luogu.21:
+luogu.kotlin/jvm:
   highlight: kotlin
   display: Kotlin/JVM
   comment: //
-luogu.22:
+luogu.scala:
+  disabled: true
   highlight: scala
   display: Scala
   comment: //
-luogu.23:
+luogu.perl:
   highlight: perl
   display: Perl
   comment: //
-luogu.25:
+luogu.python3/py:
   highlight: python
   display: PyPy 3
   comments: '#'`;
