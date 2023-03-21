@@ -1,9 +1,11 @@
 /* eslint-disable consistent-return */
 /* eslint-disable no-await-in-loop */
 import { exec } from 'child_process';
+import os from 'os';
+import { createGunzip } from 'zlib';
 import { create } from 'fancy-progress';
 import {
-    DomainModel, fs, ProblemModel, sleep, SystemModel, UserModel, yaml,
+    DomainModel, fs, ProblemModel, sleep, superagent, SystemModel, UserModel, yaml,
 } from 'hydrooj';
 
 const langs = (domainId) => `
@@ -149,8 +151,22 @@ const ignoreList: string[] = [];
 let override = false;
 let vscodeOpen = false;
 
-export async function importProblem(path: string, domainId = 'luogu', owner = 1) {
-    if (!fs.existsSync(path)) return console.log('File not found');
+export async function importProblem(path = '', domainId = 'luogu', owner = 1) {
+    if (!path) {
+        console.log('Downloading latest.ndjson...');
+        path = `${os.tmpdir()}/${String.random(8)}.ndjson`;
+        const stream = fs.createWriteStream(path);
+        const unzip = createGunzip();
+        unzip.pipe(stream);
+        superagent.get('https://cdn.luogu.com.cn/problemset-open/latest.ndjson.gz').pipe(unzip);
+        await new Promise((resolve, reject) => {
+            unzip.on('end', resolve);
+            unzip.on('error', reject);
+            stream.on('end', resolve);
+            stream.on('error', reject);
+        });
+        console.log('Downloaded');
+    } else if (!fs.existsSync(path)) return console.log('File not found');
     if (!await DomainModel.get(domainId)) return console.log('Domain not found');
     const udoc = await UserModel.getById(domainId, owner);
     if (!udoc) return console.log('User not found');

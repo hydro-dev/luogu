@@ -64,8 +64,7 @@ export default class LuoguProvider extends BasicFetcher implements IBasicProvide
         super(account, 'https://open-v1.lgapi.cn', 'json', logger, {
             headers: {
                 'User-Agent': UA,
-                Authorization: `Basic ${Buffer.from('01gvxgpney22k8820qddrghv16:n0B_RC_LZ6OkVUcX').toString('base64')}`,
-                // Authorization: `Basic ${Buffer.from(`${account.handle}:${account.password}`).toString('base64')}`,
+                Authorization: `Basic ${Buffer.from(`${account.handle}:${account.password}`).toString('base64')}`,
             },
         });
     }
