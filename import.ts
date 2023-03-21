@@ -277,13 +277,3 @@ export async function importProblem(path: string, domainId = 'luogu', owner = 1)
         if (doc?.difficulty !== difficulty) await ProblemModel.edit(domainId, doc?.docId || docId, { difficulty });
     }
 }
-
-declare module 'hydrooj' {
-    interface Model {
-        luogu: { importProblem: typeof importProblem };
-    }
-}
-
-global.Hydro.model.luogu = {
-    importProblem,
-};
