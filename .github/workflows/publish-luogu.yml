@@ -1,0 +1,34 @@
+name: Publish to Luogu
+
+on:
+    push:
+        branches:
+          - main
+
+jobs:
+    publish:
+        environment: publish
+        runs-on: ubuntu-latest
+        steps:
+          - name: checkout
+            uses: actions/checkout@v3
+
+          - name: pack plugin
+            id: pack
+            shell: bash
+            run: |
+                tar zcvf plugin.tgz *
+                ver=$(jq -r .version package.json)
+                echo "Current version: $ver"
+                echo "version=$ver" >> $GITHUB_OUTPUT
+
+          - name: publish
+            uses: tvrcgo/upload-to-oss@d805009d52698055a35b19c14d190a02d04a4f43
+            with:
+                key-id: ${{ secrets.ALIOSS_AK }}
+                key-secret: ${{ secrets.ALIOSS_SK }}
+                region: oss-cn-hangzhou
+                bucket: luogu
+                assets: |
+                    plugin.tgz:/lgapi/hydro/hydroplugin-luogu-latest.tgz
+                    plugin.tgz:/lgapi/hydro/hydroplugin-luogu-${{ steps.pack.outputs.version }}.tgz
