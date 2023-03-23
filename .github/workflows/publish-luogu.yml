@@ -17,7 +17,7 @@ jobs:
             id: pack
             shell: bash
             run: |
-                tar zcvf plugin.tgz *
+                tar zcvf plugin.tgz * --transform 's,^,luogu/,'
                 ver=$(jq -r .version package.json)
                 echo "Current version: $ver"
                 echo "version=$ver" >> $GITHUB_OUTPUT
