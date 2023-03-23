@@ -167,7 +167,15 @@ export async function importProblem(path = '', domainId = 'luogu', owner = 1) {
         });
         console.log('Downloaded');
     } else if (!fs.existsSync(path)) return console.log('File not found');
-    if (!await DomainModel.get(domainId)) return console.log('Domain not found');
+    if (!await DomainModel.get(domainId)) {
+        await DomainModel.add(domainId, owner, 'Luogu', '');
+    }
+    const keys = Object.keys(yaml.load(langs(domainId)));
+    await DomainModel.edit(domainId, {
+        mount: 'luogu',
+        langs: keys.join(','),
+        share: '*',
+    });
     const udoc = await UserModel.getById(domainId, owner);
     if (!udoc) return console.log('User not found');
     const file = fs.readFileSync(path, 'utf-8').replace(/\r/g, '').split('\n').filter((x) => x.trim());
