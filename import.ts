@@ -171,9 +171,10 @@ export async function importProblem(path = '', domainId = 'luogu', owner = 1) {
         await DomainModel.add(domainId, owner, 'Luogu', '');
     }
     const keys = Object.keys(yaml.load(langs(domainId)));
+    const o2 = 'luogu.2o2,luogu.3o2,luogu.4o2,luogu.11o2,luogu.12o2';
     await DomainModel.edit(domainId, {
         mount: 'luogu',
-        langs: keys.join(','),
+        langs: `${keys.join(',')},${new Array(25).fill(0).map((_, i) => `luogu.${i + 1}`).join(',')},${o2}`,
         share: '*',
     });
     const udoc = await UserModel.getById(domainId, owner);
@@ -300,4 +301,5 @@ export async function importProblem(path = '', domainId = 'luogu', owner = 1) {
         }
         if (doc?.difficulty !== difficulty) await ProblemModel.edit(domainId, doc?.docId || docId, { difficulty });
     }
+    console.log('导入全部完成。');
 }
