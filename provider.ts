@@ -53,6 +53,7 @@ const langMapping = {
     30: 'ocaml',
     31: 'julia',
 };
+const supportedLangs = Object.values(langMapping);
 
 export default class LuoguProvider extends BasicFetcher implements IBasicProvider {
     constructor(public account: RemoteAccount, private save: (data: any) => Promise<void>) {
@@ -87,7 +88,7 @@ export default class LuoguProvider extends BasicFetcher implements IBasicProvide
             end({ status: STATUS.STATUS_COMPILE_ERROR, message: 'Code too short' });
             return null;
         }
-        if (!lang.startsWith('luogu.')) {
+        if (!lang.startsWith('luogu.') && !supportedLangs.includes(lang)) {
             end({ status: STATUS.STATUS_COMPILE_ERROR, message: `Language not supported: ${lang}` });
             return null;
         }
@@ -95,7 +96,9 @@ export default class LuoguProvider extends BasicFetcher implements IBasicProvide
             o2 = true;
             lang = lang.slice(0, -2);
         }
-        lang = Number.isNaN(+lang.split('luogu.')[1]) ? lang.split('luogu.')[1] : langMapping[lang.split('luogu.')[1]];
+        if (!supportedLangs.includes(lang)) {
+            lang = Number.isNaN(+lang.split('luogu.')[1]) ? lang.split('luogu.')[1] : langMapping[lang.split('luogu.')[1]];
+        }
         try {
             const { body } = await this.post('/judge/problem')
                 .send({
