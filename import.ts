@@ -8,12 +8,10 @@ import {
     DomainModel, fs, ProblemModel, sleep, superagent, SystemModel, UserModel, yaml,
 } from 'hydrooj';
 
-const langs = (domainId) => `
+const langs = `
 luogu:
   execute: none
   display: Luogu
-  domain:
-  - "${domainId}"
   hidden: true
   remote: luogu
 luogu.pascal/fpc:
@@ -170,7 +168,7 @@ export async function importProblem(path = '', domainId = 'luogu', owner = 1) {
     if (!await DomainModel.get(domainId)) {
         await DomainModel.add(domainId, owner, 'Luogu', '');
     }
-    const keys = Object.keys(yaml.load(langs(domainId)));
+    const keys = Object.keys(yaml.load(langs));
     const o2 = 'luogu.2o2,luogu.3o2,luogu.4o2,luogu.11o2,luogu.12o2';
     await DomainModel.edit(domainId, {
         mount: 'luogu',
@@ -184,7 +182,7 @@ export async function importProblem(path = '', domainId = 'luogu', owner = 1) {
     const bar = create('Progress', 'green');
     const current = SystemModel.get('hydrooj.langs');
     if (!current.includes('luogu')) {
-        await SystemModel.set('hydrooj.langs', `${current}\n${langs(domainId)}`);
+        await SystemModel.set('hydrooj.langs', `${current}\n${langs}`);
     }
 
     for (let i = 1; i <= n; i++) {
