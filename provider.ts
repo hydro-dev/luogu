@@ -2,7 +2,7 @@
 import { BasicFetcher } from '@hydrooj/vjudge/src/fetch';
 import { IBasicProvider, RemoteAccount } from '@hydrooj/vjudge/src/interface';
 import {
-    Logger, sleep, STATUS, SystemModel,
+    Logger, sleep, STATUS, superagent, SystemModel,
 } from 'hydrooj';
 
 const logger = new Logger('remote/luogu');
@@ -55,13 +55,14 @@ const langMapping = {
 };
 const supportedLangs = Object.values(langMapping);
 
+const UA = [
+    `Hydro/${global.Hydro.version.hydrooj}`,
+    `(Instance Id ${SystemModel.get('installid').substring(0, 16)})`,
+    `Vjudge/${global.Hydro.version.vjudge}`,
+].join(' ');
+
 export default class LuoguProvider extends BasicFetcher implements IBasicProvider {
     constructor(public account: RemoteAccount, private save: (data: any) => Promise<void>) {
-        const UA = [
-            `Hydro/${global.Hydro.version.hydrooj}`,
-            `(Instance Id ${SystemModel.get('installid').substring(0, 16)})`,
-            `Vjudge/${global.Hydro.version.vjudge}`,
-        ].join(' ');
         super(account, 'https://open-v1.lgapi.cn', 'json', logger, {
             headers: {
                 'User-Agent': UA,
@@ -197,4 +198,20 @@ export default class LuoguProvider extends BasicFetcher implements IBasicProvide
             memory: 0,
         });
     }
+}
+
+export async function getQuota(ctx) {
+    const account = ctx.vjudge.accounts.find((a) => a.type === 'luogu');
+    const quotas = await superagent.get('https://open-v1.lgapi.cn/judge/quotaAvailable')
+        .set('User-Agent', UA)
+        .set('Authorization', `Basic ${Buffer.from(`${account.handle}:${account.password}`).toString('base64')}`)
+        .set('Accept', 'application/json').then((res) => res.body.quotas);
+    const quota = {
+        orgName: quotas[0].org.name,
+        availablePoints: quotas[0].availablePoints,
+        createTime: quotas[0].createTime * 1000,
+        expireTime: quotas[0].expireTime * 1000,
+    };
+    logger.info(`${quota.orgName} available: ${quota.availablePoints} expire: ${quota.expireTime}`);
+    return quota;
 }
