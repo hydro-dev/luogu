@@ -3,7 +3,7 @@ import {
     Context, db, MessageModel, moment,
 } from 'hydrooj';
 import { importProblem } from './import';
-import LuoguProvider, { getQuota } from './provider';
+import LuoguProvider from './provider';
 
 declare module 'hydrooj' {
     interface Model {
@@ -36,7 +36,9 @@ export async function apply(ctx: Context) {
     });
 
     ctx.on('task/daily', async () => {
-        const quota = await getQuota(ctx);
+        const status = await ctx.vjudge.checkStatus();
+        const id = Object.keys(status).find((k) => k.startsWith('luogu/'));
+        const quota = status[id].status;
         const info = `${quota.orgName} 剩余点数: ${quota.availablePoints}
 (点数有效期: ${moment(quota.createTime).format('YYYY/MM/DD')}-${moment(quota.expireTime).format('YYYY/MM/DD')})`;
         if (moment(quota.expireTime).diff(moment(), 'days') <= 3) {
