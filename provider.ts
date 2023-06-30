@@ -2,7 +2,7 @@
 import { BasicFetcher } from '@hydrooj/vjudge/src/fetch';
 import { IBasicProvider, RemoteAccount } from '@hydrooj/vjudge/src/interface';
 import {
-    Logger, sleep, STATUS, SystemModel,
+    Logger, moment, sleep, STATUS, SystemModel, Time,
 } from 'hydrooj';
 
 const logger = new Logger('remote/luogu');
@@ -56,6 +56,8 @@ const langMapping = {
 const supportedLangs = Object.values(langMapping);
 
 export default class LuoguProvider extends BasicFetcher implements IBasicProvider {
+    quota: any = null;
+
     constructor(public account: RemoteAccount, private save: (data: any) => Promise<void>) {
         const UA = [
             `Hydro/${global.Hydro.version.hydrooj}`,
@@ -196,5 +198,22 @@ export default class LuoguProvider extends BasicFetcher implements IBasicProvide
             time: 0,
             memory: 0,
         });
+    }
+
+    async checkStatus(onCheckFunc) {
+        if (!onCheckFunc || !this.quota || this.quota.updateAt < Date.now() - Time.day) {
+            const { body } = await this.get('/judge/quotaAvailable');
+            this.quota = {
+                orgName: body.quotas[0].org.name,
+                availablePoints: body.quotas[0].availablePoints,
+                createTime: body.quotas[0].createTime * 1000,
+                expireTime: body.quotas[0].expireTime * 1000,
+                updateAt: Date.now(),
+            };
+            logger.info(`${this.quota.orgName} available: ${this.quota.availablePoints} expire: ${this.quota.expireTime}`);
+        }
+        return onCheckFunc ? `${this.quota.orgName} 剩余点数: ${this.quota.availablePoints}
+(点数有效期: ${moment(this.quota.createTime).format('YYYY/MM/DD')}-${moment(this.quota.expireTime).format('YYYY/MM/DD')})
+更新于: ${moment(this.quota.updateAt).format('YYYY/MM/DD HH:mm:ss')}` : this.quota;
     }
 }
