@@ -269,7 +269,7 @@ export async function importProblem(path = '', domainId = 'luogu', owner = 1) {
         }
         let docId: number;
         if (!doc) {
-            docId = await ProblemModel.add(domainId, pid, title, content, owner, tags, false);
+            docId = await ProblemModel.add(domainId, pid, title, content, owner, tags);
         } else {
             docId = doc.docId;
         }
