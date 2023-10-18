@@ -205,7 +205,7 @@ export default class LuoguProvider extends BasicFetcher implements IBasicProvide
             const { body } = await this.get('/judge/quotaAvailable');
             this.quota = {
                 orgName: body.quotas[0].org.name,
-                availablePoints: body.quotas[0].availablePoints,
+                availablePoints: body.quotas[0].availablePoints ?? -1,
                 createTime: body.quotas[0].createTime * 1000,
                 expireTime: body.quotas[0].expireTime * 1000,
                 updateAt: Date.now(),
