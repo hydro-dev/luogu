@@ -167,23 +167,24 @@ export default class LuoguProvider extends BasicFetcher implements IBasicProvide
                 const subtasks: Record<string, { score: number; status: number }> = {};
                 let progress = (finished / total) * 100;
                 for (const subtask of judge.subtasks) {
+                    const subtaskId = +subtask.id || 0;
                     for (const c of subtask.cases) {
                         if (done[`${subtask.id}.${c.id}`]) continue;
                         finished++;
                         done[`${subtask.id}.${c.id}`] = true;
                         cases.push({
                             id: +c.id || 0,
-                            subtaskId: +subtask.id || 0,
+                            subtaskId,
                             status: STATUS_MAP[c.status],
                             time: c.time,
                             memory: c.memory,
                             message: c.description,
                         });
                         progress = (finished / total) * 100;
-                        subtasks[subtask.id] ||= { status: STATUS_MAP[c.status], score: STATUS_MAP[c.status] === STATUS.STATUS_ACCEPTED ? 100 : 0 };
-                        if (STATUS_MAP[c.status] > subtasks[subtask.id].status) {
-                            subtasks[subtask.id].status = STATUS_MAP[c.status];
-                            subtasks[subtask.id].score = STATUS_MAP[c.status] === STATUS.STATUS_ACCEPTED ? 100 : 0;
+                        subtasks[subtaskId] ||= { status: STATUS_MAP[c.status], score: STATUS_MAP[c.status] === STATUS.STATUS_ACCEPTED ? 100 : 0 };
+                        if (STATUS_MAP[c.status] > subtasks[subtaskId].status) {
+                            subtasks[subtaskId].status = STATUS_MAP[c.status];
+                            subtasks[subtaskId].score = STATUS_MAP[c.status] === STATUS.STATUS_ACCEPTED ? 100 : 0;
                         }
                     }
                 }
