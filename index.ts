@@ -10,12 +10,21 @@ declare module 'hydrooj' {
         luogu: {
             importProblem: typeof importProblem;
             addAccount: typeof addAccount;
+            overrideACScore: typeof overrideACScore;
         };
     }
 }
 
 async function addAccount(token: string) {
-    // TODO check validity
+    const newProvider = new LuoguProvider({
+        _id: 'test', type: 'luogu', handle: token.split(':')[0], password: token.split(':')[1],
+    }, async () => {});
+    try {
+        const info = await newProvider.checkStatus(true);
+        console.log(info);
+    } catch (e) {
+        throw new Error('Invalid account');
+    }
     await db.collection('vjudge').insertOne({
         _id: String.random(8),
         handle: token.split(':')[0],
@@ -25,13 +34,24 @@ async function addAccount(token: string) {
     return 'success';
 }
 
+async function overrideACScore(score: number) {
+    if (score < 0) throw new Error('Invalid score');
+    if (!score) {
+        await db.collection('vjudge').updateOne({ type: 'luogu' }, { $unset: { cookie: 1 } });
+        return 'success';
+    }
+    await db.collection('vjudge').updateOne({ type: 'luogu' }, { $set: { cookie: [`score=${score};`] } });
+    return 'success';
+}
+
 global.Hydro.model.luogu = {
     importProblem,
     addAccount,
+    overrideACScore,
 };
 
 export async function apply(ctx: Context) {
-    ctx.using(['vjudge'], (c) => {
+    ctx.inject(['vjudge'], (c) => {
         c.vjudge.addProvider('luogu', LuoguProvider);
     });
 

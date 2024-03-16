@@ -57,6 +57,7 @@ const supportedLangs = Object.values(langMapping);
 
 export default class LuoguProvider extends BasicFetcher implements IBasicProvider {
     quota: any = null;
+    overrideScore: number = 0;
 
     constructor(public account: RemoteAccount, private save: (data: any) => Promise<void>) {
         const UA = [
@@ -70,6 +71,10 @@ export default class LuoguProvider extends BasicFetcher implements IBasicProvide
                 Authorization: `Basic ${Buffer.from(`${account.handle}:${account.password}`).toString('base64')}`,
             },
         });
+        if (account.cookie) {
+            const score = +account.cookie[0].split('score=')[1].split(';')[0];
+            if (score > 0) this.overrideScore = score;
+        }
     }
 
     async ensureLogin() {
@@ -159,6 +164,7 @@ export default class LuoguProvider extends BasicFetcher implements IBasicProvide
                 const judge = body.data.judge;
                 const total = judge.subtasks.flatMap((i) => i.cases).length;
                 const cases = [];
+                const subtasks: Record<string, { score: number; status: number }> = {};
                 let progress = (finished / total) * 100;
                 for (const subtask of judge.subtasks) {
                     for (const c of subtask.cases) {
@@ -174,18 +180,24 @@ export default class LuoguProvider extends BasicFetcher implements IBasicProvide
                             message: c.description,
                         });
                         progress = (finished / total) * 100;
+                        subtasks[subtask.id] ||= { status: STATUS_MAP[c.status], score: STATUS_MAP[c.status] === STATUS.STATUS_ACCEPTED ? 100 : 0 };
+                        if (STATUS_MAP[c.status] > subtasks[subtask.id].status) {
+                            subtasks[subtask.id].status = STATUS_MAP[c.status];
+                            subtasks[subtask.id].score = STATUS_MAP[c.status] === STATUS.STATUS_ACCEPTED ? 100 : 0;
+                        }
                     }
                 }
                 if (cases.length) await next({ status: STATUS.STATUS_JUDGING, cases, progress });
                 if (judge.status < 2) continue;
                 logger.info('RecordID:', id, 'done');
-                // TODO calc total status
-                // TODO return subtask status
+                // TODO return real score
+                const status = Math.min(...Object.values(subtasks).map((i) => i.status));
                 return await end({
-                    status: STATUS_MAP[judge.status],
-                    score: judge.score,
+                    status,
+                    score: status === STATUS.STATUS_ACCEPTED && this.overrideScore ? this.overrideScore : judge.score,
                     time: judge.time,
                     memory: judge.memory,
+                    subtasks,
                 });
             } catch (e) {
                 logger.error(e);
