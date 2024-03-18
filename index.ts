@@ -10,7 +10,6 @@ declare module 'hydrooj' {
         luogu: {
             importProblem: typeof importProblem;
             addAccount: typeof addAccount;
-            overrideACScore: typeof overrideACScore;
         };
     }
 }
@@ -34,20 +33,9 @@ async function addAccount(token: string) {
     return 'success';
 }
 
-async function overrideACScore(score: number) {
-    if (score < 0) throw new Error('Invalid score');
-    if (!score) {
-        await db.collection('vjudge').updateOne({ type: 'luogu' }, { $unset: { cookie: 1 } });
-        return 'success';
-    }
-    await db.collection('vjudge').updateOne({ type: 'luogu' }, { $set: { cookie: [`score=${score};`] } });
-    return 'success';
-}
-
 global.Hydro.model.luogu = {
     importProblem,
     addAccount,
-    overrideACScore,
 };
 
 export async function apply(ctx: Context) {

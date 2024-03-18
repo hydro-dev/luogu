@@ -57,7 +57,6 @@ const supportedLangs = Object.values(langMapping);
 
 export default class LuoguProvider extends BasicFetcher implements IBasicProvider {
     quota: any = null;
-    overrideScore: number = 0;
 
     constructor(public account: RemoteAccount, private save: (data: any) => Promise<void>) {
         const UA = [
@@ -71,10 +70,6 @@ export default class LuoguProvider extends BasicFetcher implements IBasicProvide
                 Authorization: `Basic ${Buffer.from(`${account.handle}:${account.password}`).toString('base64')}`,
             },
         });
-        if (account.cookie) {
-            const score = +account.cookie[0].split('score=')[1].split(';')[0];
-            if (score > 0) this.overrideScore = score;
-        }
     }
 
     async ensureLogin() {
@@ -195,7 +190,7 @@ export default class LuoguProvider extends BasicFetcher implements IBasicProvide
                 const status = Math.min(...Object.values(subtasks).map((i) => i.status));
                 return await end({
                     status,
-                    score: status === STATUS.STATUS_ACCEPTED && this.overrideScore ? this.overrideScore : judge.score,
+                    score: status === STATUS.STATUS_ACCEPTED ? 100 : judge.score,
                     time: judge.time,
                     memory: judge.memory,
                     subtasks,
