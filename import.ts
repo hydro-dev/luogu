@@ -30,31 +30,31 @@ luogu.c/99/gcco2:
   display: C(O2)
   comment: //
   monaco: cpp
-  pretest: cc
+  pretest: c
 luogu.cxx/98/gcc:
   highlight: cpp astyle-c
   display: C++98
   comment: //
   monaco: cpp
-  pretest: cc
+  pretest: cc.cc98
 luogu.cxx/98/gcco2:
   highlight: cpp astyle-c
   display: C++98(O2)
   comment: //
   monaco: cpp
-  pretest: cc
+  pretest: cc.cc98o2
 luogu.cxx/11/gcc:
   highlight: cpp astyle-c
   display: C++11
   comment: //
   monaco: cpp
-  pretest: cc
+  pretest: cc.cc11
 luogu.cxx/11/gcco2:
   highlight: cpp astyle-c
   display: C++11(O2)
   comment: //
   monaco: cpp
-  pretest: cc
+  pretest: cc.cc11o2
 luogu.python3/c:
   highlight: python
   display: Python 3
@@ -73,25 +73,37 @@ luogu.cxx/14/gcc:
   display: C++14
   comment: //
   monaco: cpp
-  pretest: cc
+  pretest: cc.cc14
 luogu.cxx/14/gcco2:
   highlight: cpp astyle-c
   display: C++14(O2)
   comment: //
   monaco: cpp
-  pretest: cc
+  pretest: cc.cc14o2
+luogu.cxx/noi/202107:
+  highlight: cpp astyle-c
+  display: C++14(GCC 9.3.0)
+  comment: //
+  monaco: cpp
+  # pretest: cc.cc14
+luogu.cxx/noi/202107o2:
+  highlight: cpp astyle-c
+  display: C++14(O2, GCC 9.3.0)
+  comment: //
+  monaco: cpp
+  # pretest: cc.cc14o2
 luogu.cxx/17/gcc:
   highlight: cpp astyle-c
   display: C++17
   comment: //
   monaco: cpp
-  pretest: cc
+  pretest: cc.cc17
 luogu.cxx/17/gcco2:
   highlight: cpp astyle-c
   display: C++17(O2)
   comment: //
   monaco: cpp
-  pretest: cc
+  pretest: cc.cc17o2
 luogu.ruby:
   highlight: ruby
   display: Ruby
@@ -126,7 +138,6 @@ luogu.kotlin/jvm:
   display: Kotlin/JVM
   comment: //
 luogu.scala:
-  disabled: true
   highlight: scala
   display: Scala
   comment: //
@@ -137,7 +148,20 @@ luogu.perl:
 luogu.python3/py:
   highlight: python
   display: PyPy 3
-  comments: '#'`;
+  comments: '#'
+  pretest: py.pypy3
+luogu.cxx/20/gcc:
+  highlight: cpp astyle-c
+  display: C++20
+  comment: //
+  monaco: cpp
+  pretest: cc.cc20
+luogu.cxx/20/gcco2:
+  highlight: cpp astyle-c
+  display: C++20(O2)
+  comment: //
+  monaco: cpp
+  pretest: cc.cc20`;
 
 function processContent(content: string) {
     return content.replace(/\r/g, '').replace(/\n+/g, '\n')
