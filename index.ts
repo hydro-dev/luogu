@@ -15,7 +15,15 @@ declare module 'hydrooj' {
 }
 
 async function addAccount(token: string) {
-    // TODO check validity
+    const newProvider = new LuoguProvider({
+        _id: 'test', type: 'luogu', handle: token.split(':')[0], password: token.split(':')[1],
+    }, async () => {});
+    try {
+        const info = await newProvider.checkStatus(true);
+        console.log(info);
+    } catch (e) {
+        throw new Error('Invalid account');
+    }
     await db.collection('vjudge').insertOne({
         _id: String.random(8),
         handle: token.split(':')[0],
@@ -31,7 +39,7 @@ global.Hydro.model.luogu = {
 };
 
 export async function apply(ctx: Context) {
-    ctx.using(['vjudge'], (c) => {
+    ctx.inject(['vjudge'], (c) => {
         c.vjudge.addProvider('luogu', LuoguProvider);
     });
 

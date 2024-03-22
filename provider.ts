@@ -159,33 +159,41 @@ export default class LuoguProvider extends BasicFetcher implements IBasicProvide
                 const judge = body.data.judge;
                 const total = judge.subtasks.flatMap((i) => i.cases).length;
                 const cases = [];
+                const subtasks: Record<string, { score: number; status: number }> = {};
                 let progress = (finished / total) * 100;
                 for (const subtask of judge.subtasks) {
+                    const subtaskId = +subtask.id || 0;
                     for (const c of subtask.cases) {
                         if (done[`${subtask.id}.${c.id}`]) continue;
                         finished++;
                         done[`${subtask.id}.${c.id}`] = true;
                         cases.push({
                             id: +c.id || 0,
-                            subtaskId: +subtask.id || 0,
+                            subtaskId,
                             status: STATUS_MAP[c.status],
                             time: c.time,
                             memory: c.memory,
                             message: c.description,
                         });
                         progress = (finished / total) * 100;
+                        subtasks[subtaskId] ||= { status: STATUS_MAP[c.status], score: STATUS_MAP[c.status] === STATUS.STATUS_ACCEPTED ? 100 : 0 };
+                        if (STATUS_MAP[c.status] > subtasks[subtaskId].status) {
+                            subtasks[subtaskId].status = STATUS_MAP[c.status];
+                            subtasks[subtaskId].score = STATUS_MAP[c.status] === STATUS.STATUS_ACCEPTED ? 100 : 0;
+                        }
                     }
                 }
                 if (cases.length) await next({ status: STATUS.STATUS_JUDGING, cases, progress });
                 if (judge.status < 2) continue;
                 logger.info('RecordID:', id, 'done');
-                // TODO calc total status
-                // TODO return subtask status
+                // TODO return real score
+                const status = Math.min(...Object.values(subtasks).map((i) => i.status));
                 return await end({
-                    status: STATUS_MAP[judge.status],
-                    score: judge.score,
+                    status,
+                    score: status === STATUS.STATUS_ACCEPTED ? 100 : judge.score,
                     time: judge.time,
                     memory: judge.memory,
+                    subtasks,
                 });
             } catch (e) {
                 logger.error(e);
