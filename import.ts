@@ -161,7 +161,7 @@ luogu.cxx/20/gcco2:
   display: C++20(O2)
   comment: //
   monaco: cpp
-  pretest: cc.cc20`;
+  pretest: cc.cc20o2`;
 
 function processContent(content: string) {
     return content.replace(/\r/g, '').replace(/\n+/g, '\n')
