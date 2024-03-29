@@ -187,7 +187,7 @@ export default class LuoguProvider extends BasicFetcher implements IBasicProvide
                 if (judge.status < 2) continue;
                 logger.info('RecordID:', id, 'done');
                 // TODO return real score
-                const status = Math.min(...Object.values(subtasks).map((i) => i.status));
+                const status = Math.max(...Object.values(subtasks).map((i) => i.status));
                 return await end({
                     status,
                     score: status === STATUS.STATUS_ACCEPTED ? 100 : judge.score,
