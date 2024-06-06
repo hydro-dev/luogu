@@ -41,19 +41,18 @@ global.Hydro.model.luogu = {
 export async function apply(ctx: Context) {
     ctx.inject(['vjudge'], (c) => {
         c.vjudge.addProvider('luogu', LuoguProvider);
-    });
-
-    ctx.on('task/daily', async () => {
-        const status = await ctx.vjudge.checkStatus();
-        const id = Object.keys(status).find((k) => k.startsWith('luogu/'));
-        const quota = status[id].status;
-        const info = `${quota.orgName} 剩余点数: ${quota.availablePoints}
+        c.on('task/daily', async () => {
+            const status = await c.vjudge.checkStatus();
+            const id = Object.keys(status).find((k) => k.startsWith('luogu/'));
+            const quota = status[id].status;
+            const info = `${quota.orgName} 剩余点数: ${quota.availablePoints}
 (点数有效期: ${moment(quota.createTime).format('YYYY/MM/DD')}-${moment(quota.expireTime).format('YYYY/MM/DD')})`;
-        if (moment(quota.expireTime).diff(moment(), 'days') <= 3) {
-            MessageModel.sendNotification(['Hydro & 洛谷开放平台提醒：', info, '点数有效期已不足3天，请及时联系Hydro开发组或洛谷官方进行充值或续费。'].join('\n'));
-        }
-        if (quota.availablePoints > 0 && quota.availablePoints < 1000) {
-            MessageModel.sendNotification(['Hydro & 洛谷开放平台提醒：', info, '点数已不足1000，请及时联系Hydro开发组或洛谷官方进行充值或续费。'].join('\n'));
-        }
+            if (moment(quota.expireTime).diff(moment(), 'days') <= 3) {
+                MessageModel.sendNotification(['Hydro & 洛谷开放平台提醒：', info, '点数有效期已不足3天，请及时联系Hydro开发组或洛谷官方进行充值或续费。'].join('\n'));
+            }
+            if (quota.availablePoints > 0 && quota.availablePoints < 1000) {
+                MessageModel.sendNotification(['Hydro & 洛谷开放平台提醒：', info, '点数已不足1000，请及时联系Hydro开发组或洛谷官方进行充值或续费。'].join('\n'));
+            }
+        });
     });
 }
