@@ -211,6 +211,16 @@ export default class LuoguProvider extends BasicFetcher implements IBasicProvide
     async checkStatus(onCheckFunc) {
         if (!onCheckFunc || !this.quota || this.quota.updateAt < Date.now() - Time.day) {
             const { body } = await this.get('/judge/quotaAvailable');
+            if (!body.quotas.length) {
+                logger.error('未找到正在生效的套餐');
+                return onCheckFunc ? '你的账户未开通评测服务或评测套餐已过期' : {
+                    orgName: null,
+                    availablePoints: -1,
+                    createTime: 0,
+                    expireTime: 0,
+                    updateAt: Date.now(),
+                };
+            }
             this.quota = {
                 orgName: body.quotas[0].org.name,
                 availablePoints: body.quotas[0].availablePoints ?? -1,
