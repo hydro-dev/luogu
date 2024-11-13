@@ -53,9 +53,151 @@ const langMapping = {
     30: 'ocaml',
     31: 'julia',
 };
-const supportedLangs = Object.values(langMapping);
 
 export default class LuoguProvider extends BasicFetcher implements IBasicProvider {
+    static Langs = {
+        pas: {
+            display: 'Pascal',
+            highlight: 'pascal',
+            key: 'pascal/fpc',
+        },
+        c: {
+            display: 'C',
+            highlight: 'cpp astyle-c',
+            key: 'c/99/gcc',
+        },
+        'c.o2': {
+            display: 'C(O2)',
+            highlight: 'cpp astyle-c',
+            key: 'c/99/gcco2',
+        },
+        'cc.cc98': {
+            display: 'C++98',
+            highlight: 'cpp astyle-c',
+            key: 'cxx/98/gcc',
+        },
+        'cc.cc98o2': {
+            display: 'C++98(O2)',
+            highlight: 'cpp astyle-c',
+            key: 'cxx/98/gcco2',
+        },
+        'cc.cc11': {
+            display: 'C++11',
+            highlight: 'cpp astyle-c',
+            key: 'cxx/11/gcc',
+        },
+        'cc.cc11o2': {
+            display: 'C++11(O2)',
+            highlight: 'cpp astyle-c',
+            key: 'cxx/11/gcco2',
+        },
+        'cc.cc14': {
+            display: 'C++14',
+            highlight: 'cpp astyle-c',
+            key: 'cxx/14/gcc',
+        },
+        'cc.cc14o2': {
+            display: 'C++14(O2)',
+            highlight: 'cpp astyle-c',
+            key: 'cxx/14/gcco2',
+        },
+        'cc.cc17': {
+            display: 'C++17',
+            highlight: 'cpp astyle-c',
+            key: 'cxx/17/gcc',
+        },
+        'cc.cc17o2': {
+            display: 'C++17(O2)',
+            highlight: 'cpp astyle-c',
+            key: 'cxx/17/gcco2',
+        },
+        'cc.cc20': {
+            display: 'C++20',
+            highlight: 'cpp astyle-c',
+            key: 'cxx/20/gcc',
+        },
+        'cc.cc20o2': {
+            display: 'C++20(O2)',
+            highlight: 'cpp astyle-c',
+            key: 'cxx/20/gcco2',
+        },
+        'cc.noi': {
+            display: 'C++14(GCC 9.3.0)',
+            highlight: 'cpp astyle-c',
+            key: 'cxx/noi/202107',
+        },
+        'cc.noi.o2': {
+            display: 'C++14(O2, GCC 9.3.0)',
+            highlight: 'cpp astyle-c',
+            key: 'cxx/noi/202107o2',
+        },
+        'py.py3': {
+            display: 'Python 3',
+            highlight: 'python',
+            key: 'python3/c',
+        },
+        java: {
+            display: 'Java',
+            highlight: 'java astyle-java',
+            key: 'java/8',
+        },
+        'js': {
+            display: 'Node.js LTS',
+            highlight: 'js',
+            key: 'js/node/lts',
+        },
+        ruby: {
+            display: 'Ruby',
+            highlight: 'ruby',
+            key: 'ruby',
+        },
+        go: {
+            display: 'Go',
+            highlight: 'go',
+            key: 'go',
+        },
+        rust: {
+            display: 'Rust',
+            highlight: 'rust',
+            key: 'rust/rustc',
+        },
+        php: {
+            display: 'PHP',
+            highlight: 'php',
+            key: 'php',
+        },
+        vb: {
+            display: 'Visual Basic Mono',
+            highlight: 'vb',
+            key: 'mono_vb',
+        },
+        'haskell': {
+            display: 'Haskell',
+            highlight: 'hs',
+            key: 'haskell/ghc',
+        },
+        'kotlin': {
+            display: 'Kotlin/JVM',
+            highlight: 'kotlin',
+            key: 'kotlin/jvm',
+        },
+        scala: {
+            display: 'Scala',
+            highlight: 'scala',
+            key: 'scala',
+        },
+        perl: {
+            display: 'Perl',
+            highlight: 'perl',
+            key: 'perl',
+        },
+        'py.pypy3': {
+            display: 'PyPy 3',
+            highlight: 'python',
+            key: 'python3/py',
+        },
+    };
+
     quota: any = null;
 
     constructor(public account: RemoteAccount, private save: (data: any) => Promise<void>) {
@@ -90,17 +232,11 @@ export default class LuoguProvider extends BasicFetcher implements IBasicProvide
             end({ status: STATUS.STATUS_COMPILE_ERROR, message: 'Code too short' });
             return null;
         }
-        if (!lang.startsWith('luogu.') && !supportedLangs.includes(lang)) {
-            end({ status: STATUS.STATUS_COMPILE_ERROR, message: `Language not supported: ${lang}` });
-            return null;
-        }
         if (lang.endsWith('o2')) {
             o2 = true;
             lang = lang.slice(0, -2);
         }
-        if (!supportedLangs.includes(lang)) {
-            lang = Number.isNaN(+lang.split('luogu.')[1]) ? lang.split('luogu.')[1] : langMapping[lang.split('luogu.')[1]];
-        }
+        if (lang.startsWith('luogu.')) lang = langMapping[lang.split('luogu.')[1]];
         try {
             const { body } = await this.post('/judge/problem')
                 .send({

@@ -5,171 +5,9 @@ import os from 'os';
 import { createGunzip } from 'zlib';
 import { create } from 'fancy-progress';
 import {
-    DomainModel, fs, ProblemModel, sleep, superagent, SystemModel, UserModel, yaml,
+    DomainModel, fs, ProblemModel, sleep, superagent, UserModel, yaml,
 } from 'hydrooj';
 
-const langs = `
-luogu:
-  execute: none
-  display: Luogu
-  hidden: true
-  remote: luogu
-luogu.pascal/fpc:
-  highlight: pascal
-  display: Pascal
-  comment: //
-  pretest: pas
-luogu.c/99/gcc:
-  highlight: cpp astyle-c
-  display: C
-  comment: //
-  monaco: cpp
-  pretest: c
-luogu.c/99/gcco2:
-  highlight: cpp astyle-c
-  display: C(O2)
-  comment: //
-  monaco: cpp
-  pretest: c
-luogu.cxx/98/gcc:
-  highlight: cpp astyle-c
-  display: C++98
-  comment: //
-  monaco: cpp
-  pretest: cc.cc98
-luogu.cxx/98/gcco2:
-  highlight: cpp astyle-c
-  display: C++98(O2)
-  comment: //
-  monaco: cpp
-  pretest: cc.cc98o2
-luogu.cxx/11/gcc:
-  highlight: cpp astyle-c
-  display: C++11
-  comment: //
-  monaco: cpp
-  pretest: cc.cc11
-luogu.cxx/11/gcco2:
-  highlight: cpp astyle-c
-  display: C++11(O2)
-  comment: //
-  monaco: cpp
-  pretest: cc.cc11o2
-luogu.python3/c:
-  highlight: python
-  display: Python 3
-  comments: '#'
-  pretest: py.py3
-luogu.java/8:
-  highlight: java astyle-java
-  display: Java
-  comments: //
-luogu.js/node/lts:
-  highlight: js
-  display: Node.js LTS
-  comments: //
-luogu.cxx/14/gcc:
-  highlight: cpp astyle-c
-  display: C++14
-  comment: //
-  monaco: cpp
-  pretest: cc.cc14
-luogu.cxx/14/gcco2:
-  highlight: cpp astyle-c
-  display: C++14(O2)
-  comment: //
-  monaco: cpp
-  pretest: cc.cc14o2
-luogu.cxx/noi/202107:
-  highlight: cpp astyle-c
-  display: C++14(GCC 9.3.0)
-  comment: //
-  monaco: cpp
-  # pretest: cc.cc14
-luogu.cxx/noi/202107o2:
-  highlight: cpp astyle-c
-  display: C++14(O2, GCC 9.3.0)
-  comment: //
-  monaco: cpp
-  # pretest: cc.cc14o2
-luogu.cxx/17/gcc:
-  highlight: cpp astyle-c
-  display: C++17
-  comment: //
-  monaco: cpp
-  pretest: cc.cc17
-luogu.cxx/17/gcco2:
-  highlight: cpp astyle-c
-  display: C++17(O2)
-  comment: //
-  monaco: cpp
-  pretest: cc.cc17o2
-luogu.ruby:
-  highlight: ruby
-  display: Ruby
-  comment: //
-luogu.go:
-  highlight: go
-  display: Go
-  comment: //
-luogu.rust/rustc:
-  highlight: rust
-  display: Rust
-  comment: //
-luogu.php:
-  highlight: php
-  display: PHP
-luogu.csharp:
-  disabled: true
-  highlight: csharp
-  display: 'C#'
-  comment: //
-luogu.vb:
-  disabled: true
-  highlight: vb
-  display: Visual Basic Mono
-  comment: //
-luogu.haskell/ghc:
-  highlight: hs
-  display: Haskell
-  comment: //
-luogu.kotlin/jvm:
-  highlight: kotlin
-  display: Kotlin/JVM
-  comment: //
-luogu.scala:
-  highlight: scala
-  display: Scala
-  comment: //
-luogu.perl:
-  highlight: perl
-  display: Perl
-  comment: //
-luogu.python3/py:
-  highlight: python
-  display: PyPy 3
-  comments: '#'
-  pretest: py.pypy3
-luogu.cxx/20/gcc:
-  highlight: cpp astyle-c
-  display: C++20
-  comment: //
-  monaco: cpp
-  pretest: cc.cc20
-luogu.cxx/20/gcco2:
-  highlight: cpp astyle-c
-  display: C++20(O2)
-  comment: //
-  monaco: cpp
-  pretest: cc.cc20o2`;
-
-function processContent(content: string) {
-    return content.replace(/\r/g, '').replace(/\n+/g, '\n')
-        .replace(/!\[[a-z.0-9A-z]*?\]\(https:\/\/cdn\.luogu\.com\.cn\/.+\)/g, '[image]')
-        .replace(/!\[[a-z.0-9A-z]*?\]\(file:\/\/.+\)/g, '[image]');
-}
-
-const ignoreList: string[] = [];
 let override = false;
 let vscodeOpen = false;
 
@@ -197,10 +35,6 @@ export async function importProblem(path = '', domainId = 'luogu', owner = 1) {
     const file = fs.readFileSync(path, 'utf-8').replace(/\r/g, '').split('\n').filter((x) => x.trim());
     const n = file.length;
     const bar = create('Progress', 'green');
-    const current = SystemModel.get('hydrooj.langs');
-    if (!current.includes('luogu')) {
-        await SystemModel.set('hydrooj.langs', `${current}\n${langs}`);
-    }
 
     for (let i = 1; i <= n; i++) {
         // eslint-disable-next-line no-inner-declarations, @typescript-eslint/no-loop-func
@@ -267,16 +101,16 @@ export async function importProblem(path = '', domainId = 'luogu', owner = 1) {
                     if (op === 'N') return false;
                 });
             }
-            if (processContent(doc.content) !== processContent(content) && !ignoreList.includes(`,${pid.split('P')[1]},`)) {
-                fs.writeFileSync('__a.md', processContent(doc.content));
-                fs.writeFileSync('__b.md', processContent(content));
+            if (doc.content !== content) {
+                fs.writeFileSync('__a.md', doc.content);
+                fs.writeFileSync('__b.md', content);
                 if (process.env.VSCODE_INJECTION && !vscodeOpen) {
                     exec('code --diff __a.md __b.md');
                     vscodeOpen = true;
                 }
                 await promptMessage([
                     `题目内容冲突：已经存在 ${pid}，但题目内容不同 是否覆盖？ (All/Yes/No/Exit)`,
-                    `file: __a.md __b.md ${processContent(doc.content).includes('[image]') ? '警告：存在图片' : ''}`,
+                    'file: __a.md __b.md',
                     // eslint-disable-next-line @typescript-eslint/no-loop-func
                 ], async (op) => {
                     if (op === 'A') override = true;

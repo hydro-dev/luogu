@@ -1,9 +1,8 @@
 import { } from '@hydrooj/vjudge';
 import {
-    Context, db, MessageModel, moment,
+    Context, db, Logger, MessageModel, moment, SystemModel, yaml,
 } from 'hydrooj';
 import { importProblem } from './import';
-import LuoguProvider from './provider';
 
 declare module 'hydrooj' {
     interface Model {
@@ -15,15 +14,6 @@ declare module 'hydrooj' {
 }
 
 async function addAccount(token: string) {
-    const newProvider = new LuoguProvider({
-        _id: 'test', type: 'luogu', handle: token.split(':')[0], password: token.split(':')[1],
-    }, async () => {});
-    try {
-        const info = await newProvider.checkStatus(true);
-        console.log(info);
-    } catch (e) {
-        throw new Error('Invalid account');
-    }
     await db.collection('vjudge').insertOne({
         _id: String.random(8),
         handle: token.split(':')[0],
@@ -38,7 +28,47 @@ global.Hydro.model.luogu = {
     addAccount,
 };
 
+const logger = new Logger('vjudge/luogu');
+
+function checkIsSupportedVersion(name: string, min: string) {
+    let version;
+    try {
+        ({ version } = require(`${name}/package.json`));
+    } catch (e) {
+        logger.error(`洛谷 VJudge 功能需要安装 ${name}，但没有找到该插件。`);
+        return false;
+    }
+    const [major, minor, patch] = version.split('.').map(Number);
+    const [minMajor, minMinor, minPatch] = min.split('.').map(Number);
+    if (major < minMajor || (major === minMajor && minor < minMinor) || (major === minMajor && minor === minMinor && patch < minPatch)) {
+        logger.error(`洛谷 VJudge 功能需要 ${name} 的版本至少为 ${min}，当前版本为 ${version}。`);
+        return false;
+    }
+    return true;
+}
+
 export async function apply(ctx: Context) {
+    checkIsSupportedVersion('hydrooj', '4.14.1');
+    checkIsSupportedVersion('@hydrooj/vjudge', '1.9.10');
+
+    const { default: LuoguProvider } = require('./provider');
+
+    ctx.inject(['migration'], (c) => {
+        c.migration.registerChannel('vjudge-luogu', [
+            async () => {
+                const langs = await SystemModel.get('hydrooj.langs');
+                if (!langs.includes('luogu')) return;
+                const parsed = yaml.load(langs) as any;
+                for (const key in parsed) {
+                    if (key.startsWith('luogu.') || key === 'luogu') {
+                        delete parsed[key];
+                    }
+                }
+                await SystemModel.set('hydrooj.langs', yaml.dump(parsed));
+            },
+        ]);
+    });
+
     ctx.inject(['vjudge'], (c) => {
         c.vjudge.addProvider('luogu', LuoguProvider);
         c.on('task/daily', async () => {

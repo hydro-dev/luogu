@@ -1,6 +1,6 @@
 {
     "name": "@hydrooj/vjudge-luogu",
-    "version": "0.0.3",
+    "version": "0.0.4",
     "dependencies": {
         "fancy-progress": "^1.0.1"
     }
