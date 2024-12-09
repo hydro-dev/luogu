@@ -283,7 +283,7 @@ export default class LuoguProvider extends BasicFetcher implements IBasicProvide
                 logger.debug(body);
                 if (!compiled && body.data && body.data.compile) {
                     compiled = true;
-                    next({ compilerText: body.data.compile.message });
+                    if (body.data.compile.message) next({ compilerText: body.data.compile.message });
                     if (body.data.compile.success === false) {
                         return await end({
                             status: STATUS.STATUS_COMPILE_ERROR, score: 0, time: 0, memory: 0,

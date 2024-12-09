@@ -11,7 +11,7 @@ import {
 let override = false;
 let vscodeOpen = false;
 
-export async function importProblem(path = '', domainId = 'luogu', owner = 1) {
+export async function importProblem(path = '', domainId = 'luogu', owner = 1, prefix = '') {
     if (!path) {
         console.log('Downloading latest.ndjson...');
         path = `${os.tmpdir()}/${String.random(8)}.ndjson`;
@@ -81,7 +81,8 @@ export async function importProblem(path = '', domainId = 'luogu', owner = 1) {
             content += `\`\`\`output${t + 1}\n${samples[t][1] || ''}\n\`\`\`\n\n`;
         }
         if (hint) content += `## 提示\n${hint}\n\n`;
-        const doc = await ProblemModel.get(domainId, pid);
+        const target = prefix ? `${prefix}${pid}` : pid;
+        const doc = await ProblemModel.get(domainId, target);
         if (doc) {
             if (doc.title !== title) {
                 if (doc.title.replace(/ /g, '') === title.replace(/ /g, '')) {
@@ -89,7 +90,7 @@ export async function importProblem(path = '', domainId = 'luogu', owner = 1) {
                     continue;
                 }
                 await promptMessage([
-                    `题目ID 冲突：已经存在 ${pid}，但题目标题不同 是否覆盖？ (Yes/No/Exit)`,
+                    `题目ID 冲突：已经存在 ${target}，但题目标题不同 是否覆盖？ (Yes/No/Exit)`,
                     `当前 ${doc.title}`,
                     `传入 ${title}`,
                 ], async (op) => {
@@ -106,10 +107,11 @@ export async function importProblem(path = '', domainId = 'luogu', owner = 1) {
                 fs.writeFileSync('__b.md', content);
                 if (process.env.VSCODE_INJECTION && !vscodeOpen) {
                     exec('code --diff __a.md __b.md');
+                    exec('cursor --diff __a.md __b.md');
                     vscodeOpen = true;
                 }
                 await promptMessage([
-                    `题目内容冲突：已经存在 ${pid}，但题目内容不同 是否覆盖？ (All/Yes/No/Exit)`,
+                    `题目内容冲突：已经存在 ${target}，但题目内容不同 是否覆盖？ (All/Yes/No/Exit)`,
                     'file: __a.md __b.md',
                     // eslint-disable-next-line @typescript-eslint/no-loop-func
                 ], async (op) => {
@@ -127,7 +129,7 @@ export async function importProblem(path = '', domainId = 'luogu', owner = 1) {
         }
         let docId: number;
         if (!doc) {
-            docId = await ProblemModel.add(domainId, pid, title, content, owner, tags);
+            docId = await ProblemModel.add(domainId, target, title, content, owner, tags);
         } else {
             docId = doc.docId;
         }
