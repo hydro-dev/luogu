@@ -3,7 +3,6 @@
 import { exec } from 'child_process';
 import os from 'os';
 import { createGunzip } from 'zlib';
-import { create } from 'fancy-progress';
 import {
     DomainModel, fs, ProblemModel, sleep, superagent, UserModel, yaml,
 } from 'hydrooj';
@@ -34,7 +33,7 @@ export async function importProblem(path = '', domainId = 'luogu', owner = 1, pr
     if (!udoc) return console.log('User not found');
     const file = fs.readFileSync(path, 'utf-8').replace(/\r/g, '').split('\n').filter((x) => x.trim());
     const n = file.length;
-    const bar = create('Progress', 'green');
+    const bar = require('fancy-progress').create('Progress', 'green');
 
     for (let i = 1; i <= n; i++) {
         // eslint-disable-next-line no-inner-declarations, @typescript-eslint/no-loop-func
