@@ -1,6 +1,6 @@
 import { } from '@hydrooj/vjudge';
 import {
-    Context, db, Logger, MessageModel, moment, SystemModel, yaml,
+    Context, db, Logger, MessageModel, moment, randomstring, SystemModel, yaml,
 } from 'hydrooj';
 import { importProblem } from './import';
 
@@ -15,7 +15,7 @@ declare module 'hydrooj' {
 
 async function addAccount(token: string) {
     await db.collection('vjudge').insertOne({
-        _id: String.random(8),
+        _id: randomstring(8),
         handle: token.split(':')[0],
         password: token.split(':')[1],
         type: 'luogu',

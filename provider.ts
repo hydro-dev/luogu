@@ -141,7 +141,7 @@ export default class LuoguProvider extends BasicFetcher implements IBasicProvide
             highlight: 'java astyle-java',
             key: 'java/8',
         },
-        'js': {
+        js: {
             display: 'Node.js LTS',
             highlight: 'js',
             key: 'js/node/lts',
@@ -171,12 +171,12 @@ export default class LuoguProvider extends BasicFetcher implements IBasicProvide
             highlight: 'vb',
             key: 'mono_vb',
         },
-        'haskell': {
+        haskell: {
             display: 'Haskell',
             highlight: 'hs',
             key: 'haskell/ghc',
         },
-        'kotlin': {
+        kotlin: {
             display: 'Kotlin/JVM',
             highlight: 'kotlin',
             key: 'kotlin/jvm',
@@ -295,7 +295,7 @@ export default class LuoguProvider extends BasicFetcher implements IBasicProvide
                 const judge = body.data.judge;
                 const total = judge.subtasks.flatMap((i) => i.cases).length;
                 const cases = [];
-                const subtasks: Record<string, { score: number; status: number }> = {};
+                const subtasks: Record<string, { score: number, status: number }> = {};
                 let progress = (finished / total) * 100;
                 for (const subtask of judge.subtasks) {
                     const subtaskId = +subtask.id || 0;

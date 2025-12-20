@@ -4,16 +4,27 @@ import { exec } from 'child_process';
 import os from 'os';
 import { createGunzip } from 'zlib';
 import {
-    DomainModel, fs, ProblemModel, sleep, superagent, UserModel, yaml,
+    DomainModel, fs, ProblemModel, randomstring, sleep, superagent, UserModel, yaml,
 } from 'hydrooj';
 
 let override = false;
 let vscodeOpen = false;
 
-export async function importProblem(path = '', domainId = 'luogu', owner = 1, prefix = '') {
+const difficultyMap = {
+    0: 0,
+    1: 1,
+    2: 3,
+    3: 5,
+    4: 6,
+    5: 7,
+    6: 8,
+    7: 9,
+};
+
+export async function importProblem(path = '', domainId = 'system', owner = 1, prefix = 'luogu-') {
     if (!path) {
         console.log('Downloading latest.ndjson...');
-        path = `${os.tmpdir()}/${String.random(8)}.ndjson`;
+        path = `${os.tmpdir()}/${randomstring(8)}.ndjson`;
         const stream = fs.createWriteStream(path);
         const unzip = createGunzip();
         unzip.pipe(stream);
@@ -36,7 +47,7 @@ export async function importProblem(path = '', domainId = 'luogu', owner = 1, pr
     const bar = require('fancy-progress').create('Progress', 'green');
 
     for (let i = 1; i <= n; i++) {
-        // eslint-disable-next-line no-inner-declarations, @typescript-eslint/no-loop-func
+        // eslint-disable-next-line ts/no-loop-func
         async function promptMessage(message: string[], keyHandler: Function) {
             if (override) return keyHandler('Y');
             if (!process.stdin.isTTY) {
@@ -67,7 +78,7 @@ export async function importProblem(path = '', domainId = 'luogu', owner = 1, pr
             inputFormat, outputFormat, samples, hint, limits, tags,
             translation,
         } = JSON.parse(file[i - 1]);
-        const title = _title.replace(/](?! )/g, '] ');
+        const title = _title.replace(/\](?! )/g, '] ');
         bar.update(i / n, `(${i}/${n}) ${title}`);
         let content = '';
         if (background?.trim()) content += `## 题目背景\n${background}\n\n`;
@@ -112,7 +123,7 @@ export async function importProblem(path = '', domainId = 'luogu', owner = 1, pr
                 await promptMessage([
                     `题目内容冲突：已经存在 ${target}，但题目内容不同 是否覆盖？ (All/Yes/No/Exit)`,
                     'file: __a.md __b.md',
-                    // eslint-disable-next-line @typescript-eslint/no-loop-func
+                    // eslint-disable-next-line ts/no-loop-func
                 ], async (op) => {
                     if (op === 'A') override = true;
                     if (op === 'Y' || op === 'A') {
@@ -149,7 +160,8 @@ export async function importProblem(path = '', domainId = 'luogu', owner = 1, pr
                 })),
             })));
         }
-        if (doc?.difficulty !== difficulty) await ProblemModel.edit(domainId, doc?.docId || docId, { difficulty });
+        const actualDifficulty = difficultyMap[difficulty];
+        if (doc?.difficulty !== actualDifficulty) await ProblemModel.edit(domainId, doc?.docId || docId, { difficulty: actualDifficulty });
     }
     console.log('导入全部完成。');
 }
